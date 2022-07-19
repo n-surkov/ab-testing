@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
-from tqdm.notebook import tqdm
-from scipy import stats
+# from tqdm.notebook import tqdm
+# from scipy import stats
 from typing import List
 
 
