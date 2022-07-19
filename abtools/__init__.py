@@ -5,4 +5,4 @@ from .methods import (
     # Проверки с данными с предпериода
     check_cuped, check_normed, check_linearization, check_normed_delta_method
 )
-from plots import get_pvalue_samples, plot_pvalue_ecdf
+from .plots import get_pvalue_samples, plot_pvalue_ecdf

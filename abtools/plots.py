@@ -64,26 +64,3 @@ def plot_pvalue_ecdf(pvalues: List[float], title: str = None) -> plt.figure:
 #     ax2.grid()
 #
 #     return fig
-
-
-def get_pvalue_samples(a_sample_generator, b_sample_generator, size: int = 1000) -> List[float]:
-    """
-    Генерация p-value с помощью генерации данных и stats.ttest_ind
-
-    Вспомогательная функция для описательной тетрадки
-
-    Parameters
-    ----------
-    a_sample_generator
-    b_sample_generator
-    size
-
-    Returns
-    -------
-    pvalues: List[float]
-    """
-    pvalues = []
-    for _ in tqdm(range(size)):
-        _, p = stats.ttest_ind(a_sample_generator(), b_sample_generator())
-        pvalues.append(p)
-    return pvalues
