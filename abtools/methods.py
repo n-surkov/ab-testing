@@ -158,6 +158,81 @@ def check_bootstrap(
         return pvalue, delta
 
 
+def check_poisson(
+        a: List[np.array],
+        b: List[np.array],
+        n_boot: int = 1000,
+        return_diffs: bool = False,
+        w_a: List[float] = None,
+        w_b: List[float] = None,
+) -> (float, float):
+    """
+    Проверка гипотезы методом пуассоновского бутстрепа.
+
+    Бутстреп является хорошим методом проверки.
+    Его минусом является вычислительная сложность, считается на порядок дольше других методов.
+
+    Parameters
+    ----------
+    a: List[np.array], список множеств продаж магазинов контрольной группы
+    b: List[np.array], список множеств продаж магазинов пилотной группы
+    n_boot: Optional[int] (default=1000), количество итераций бутстрепа
+    return_diffs: Optional[bool] (default=False), возвращать ли список нагенерированных разностей
+    w_a: List[np.array] (default=None), список весов магазинов контрольной группы. По-умолчанию равные веса для всех семплов.
+    w_b: List[np.array] (default=None), список весов магазинов пилотной группы. По-умолчанию равные веса для всех семплов.
+
+    Returns
+    -------
+    pvalue: float, pvalue
+    delta: float, разница средних в группах
+    list_diff: Optional[List[float]], список набутстрепленных дельт
+    """
+    len_a = len(a)
+    len_b = len(b)
+    group_len = min(len_a, len_b)
+
+    w_a = np.ones(len_a) if w_a is None else w_a
+    w_b = np.ones(len_b) if w_b is None else w_b
+
+    # Расчитываем суммарные продажи в магазинах и количество дней/недель продаж
+    def _agg_data(data, weights):
+        len_data = len(weights)
+        sum_count = np.zeros((len_data, 3))
+        sum_count[:, 0] = np.array([np.sum(u) for u in data])
+        sum_count[:, 1] = np.array([len(u) for u in data])
+        sum_count[:, 2] = np.array(weights) / np.array(weights).sum()
+        return sum_count
+
+    a_sum_count = _agg_data(a, w_a)
+    b_sum_count = _agg_data(b, w_b)
+
+    # Бутстрепим
+    def _boot(data):
+        num = np.zeros((n_boot))
+        den = np.zeros((n_boot))
+        for i, v in enumerate(data):
+            # np.random.seed(i)
+            p_sample = np.random.poisson(1, n_boot) * v[2]
+            num += v[0] * p_sample
+            den += v[1] * p_sample
+        return num / den
+
+    a_boot_metrics = _boot(a_sum_count)
+    b_boot_metrics = _boot(b_sum_count)
+    list_diff = b_boot_metrics - a_boot_metrics
+
+    delta = ((b_sum_count[:, 0] * b_sum_count[:, 2]).sum() / (b_sum_count[:, 1] * b_sum_count[:, 2]).sum()) \
+            - ((a_sum_count[:, 0] * a_sum_count[:, 2]).sum() / (a_sum_count[:, 1] * a_sum_count[:, 2]).sum())
+    std = np.std(list_diff)
+
+    pvalue = 2 * (1 - stats.norm.cdf(np.abs(delta / std)))
+
+    if return_diffs:
+        return pvalue, delta, list_diff
+    else:
+        return pvalue, delta
+
+
 def check_delta_method(a: List[np.array], b: List[np.array]) -> (float, float):
     """
     Проверка гипотезы с помощью дельта-метода.
